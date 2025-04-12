@@ -1,347 +1,130 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
-    const modal = document.getElementById('promptModal');
-    const promptGrid = document.querySelector('.prompt-grid');
-    const closeButton = document.querySelector('.close-button');
-    const filterTagsContainer = document.querySelector('.filter-container');
-    const viewTabs = document.querySelectorAll('.view-tab');
-    const sortSelect = document.getElementById('sort-by');
-    const searchInput = document.querySelector('.search-input');
-    const searchButton = document.querySelector('.search-button');
-    
-    // State
-    let currentPrompts = [...samplePrompts]; // Make sure samplePrompts is defined in data.js
-    let activeFilter = 'All';
-    let activeView = 'All Prompts';
-    let currentSort = 'newest';
-    let searchTerm = '';
-    
-    // Initialize the app
-    init();
-    
-    function init() {
-        // Generate filter tags dynamically
-        generateFilterTags();
-        
-        // Render all prompts initially
-        renderPrompts();
-        
-        // Set up event listeners
-        setupEventListeners();
+// Initial sample data (will be replaced with localStorage in Phase 3)
+const samplePrompts = [
+    {
+        id: 'prompt-1',
+        title: 'Website Redesign Expert',
+        description: 'Perfect for getting detailed website redesign suggestions with a focus on UX and conversion optimization.',
+        content: `Act as a senior UX designer with 15+ years of experience in conversion optimization. Review my website [URL] and suggest improvements focusing on: user flow, call-to-actions, visual hierarchy, and mobile responsiveness. Include specific examples and mockup descriptions.`,
+        tags: ['Business', 'Design'],
+        favorite: false,
+        dateCreated: '2025-04-01T10:30:00Z',
+        dateModified: '2025-04-01T10:30:00Z',
+        useCount: 5
+    },
+    {
+        id: 'prompt-2',
+        title: 'Python Debugging Assistant',
+        description: 'Helps identify and fix bugs in your Python code with clear explanations of the issues.',
+        content: `You are an expert Python developer with strong debugging skills. I'll share Python code that has bugs or isn't working as expected. Please:
+1. Identify all bugs and issues
+2. Explain why each is problematic
+3. Provide fixed code with comments
+4. Suggest best practices improvements
+
+Here's my code:
+\`\`\`python
+[paste your code here]
+\`\`\``,
+        tags: ['Coding', 'Python'],
+        favorite: false,
+        dateCreated: '2025-04-02T14:15:00Z',
+        dateModified: '2025-04-02T14:15:00Z',
+        useCount: 8
+    },
+    {
+        id: 'prompt-3',
+        title: 'Creative Story Generator',
+        description: 'Generates imaginative short stories based on your inputs and preferences.',
+        content: `Write a captivating short story (800-1000 words) based on these parameters:
+
+Genre: [genre]
+Main character: [brief description]
+Setting: [place/time]
+Theme: [central theme]
+Plot element to include: [specific element]
+Tone: [mood/tone]
+
+Make the story engaging with a clear beginning, middle, and end. Include vivid sensory details and meaningful dialogue. The ending should be [type of ending].`,
+        tags: ['Creative', 'Writing'],
+        favorite: true,
+        dateCreated: '2025-04-03T09:45:00Z',
+        dateModified: '2025-04-03T09:45:00Z',
+        useCount: 12
+    },
+    {
+        id: 'prompt-4',
+        title: 'Academic Research Helper',
+        description: 'Helps organize research, structure papers, and formulate strong arguments for academic writing.',
+        content: `As an experienced academic research assistant, help me organize my research on [topic]. I need assistance with:
+
+1. Creating a structured outline for a [length] paper
+2. Identifying key areas to focus my research
+3. Formulating a strong thesis statement
+4. Suggesting how to approach the literature review
+5. Developing compelling arguments
+
+My current approach is [brief description]. My deadline is [date].`,
+        tags: ['Academic', 'Research'],
+        favorite: false,
+        dateCreated: '2025-04-04T16:20:00Z',
+        dateModified: '2025-04-04T16:20:00Z',
+        useCount: 3
+    },
+    {
+        id: 'prompt-5',
+        title: 'Product Description Writer',
+        description: 'Creates compelling product descriptions that highlight benefits and features effectively.',
+        content: `Act as an expert e-commerce copywriter. Write a compelling product description for [product name] with these details:
+
+Product: [basic details]
+Key features: [list 3-5 features]
+Target audience: [demographic]
+Price point: [price range]
+Brand voice: [tone/style]
+
+Create a description with:
+- An attention-grabbing headline
+- 3-4 paragraphs of persuasive copy (150-200 words total)
+- Bullet points highlighting key features and benefits
+- A clear call-to-action`,
+        tags: ['Business', 'Marketing'],
+        favorite: false,
+        dateCreated: '2025-04-05T11:10:00Z',
+        dateModified: '2025-04-05T11:10:00Z',
+        useCount: 7
+    },
+    {
+        id: 'prompt-6',
+        title: 'Code Refactoring Guide',
+        description: 'Helps optimize and improve existing code for better performance and readability.',
+        content: `You are a senior software engineer with expertise in clean code and refactoring. Review my [language] code below and:
+
+1. Identify code smells and potential issues
+2. Suggest refactoring strategies to improve:
+   - Readability
+   - Maintainability
+   - Performance
+   - Test coverage opportunities
+3. Provide refactored code examples with explanations
+4. Recommend design patterns if applicable
+
+Here's my code:
+\`\`\`
+[paste code here]
+\`\`\``,
+        tags: ['Coding', 'Best Practices'],
+        favorite: true,
+        dateCreated: '2025-04-06T13:25:00Z',
+        dateModified: '2025-04-06T13:25:00Z',
+        useCount: 10
     }
-    
-    function generateFilterTags() {
-        // Get all unique tags
-        const allTags = getAllTags();
-        
-        // Create the "All" tag (already in HTML)
-        
-        // Create tags for each unique tag
-        allTags.forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.className = 'filter-tag';
-            tagElement.textContent = tag;
-            filterTagsContainer.appendChild(tagElement);
-        });
-        
-        // Set up event listeners for filter tags
-        const filterTags = document.querySelectorAll('.filter-tag');
-        filterTags.forEach(tag => {
-            tag.addEventListener('click', () => {
-                // Remove active class from all tags
-                filterTags.forEach(t => t.classList.remove('active'));
-                // Add active class to clicked tag
-                tag.classList.add('active');
-                
-                // Update filter and rerender
-                activeFilter = tag.textContent;
-                applyFiltersAndRender();
-            });
-        });
-    }
-    
-    function setupEventListeners() {
-        // Handle view tab selection
-        viewTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Remove active class from all tabs
-                viewTabs.forEach(t => t.classList.remove('active'));
-                // Add active class to clicked tab
-                tab.classList.add('active');
-                
-                // Update view and rerender
-                activeView = tab.textContent;
-                applyFiltersAndRender();
-            });
-        });
-        
-        // Handle sort selection
-        sortSelect.addEventListener('change', () => {
-            currentSort = sortSelect.value;
-            applyFiltersAndRender();
-        });
-        
-        // Handle search
-        searchButton.addEventListener('click', () => {
-            searchTerm = searchInput.value.trim().toLowerCase();
-            applyFiltersAndRender();
-        });
-        
-        // Also trigger search on Enter key
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                searchButton.click();
-            }
-        });
-        
-        // Close modal when clicking the close button
-        closeButton.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        // Close modal when clicking outside the content
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-        
-        // Add copy functionality to the "Copy Prompt" button in the modal
-        const copyButton = document.querySelector('.primary-button');
-        copyButton.addEventListener('click', () => {
-            const promptContent = document.querySelector('.prompt-detail-content').textContent;
-            navigator.clipboard.writeText(promptContent)
-                .then(() => {
-                    // Visual feedback that copy succeeded
-                    const originalText = copyButton.textContent;
-                    copyButton.textContent = 'Copied!';
-                    setTimeout(() => {
-                        copyButton.textContent = originalText;
-                    }, 2000);
-                })
-                .catch(err => {
-                    console.error('Failed to copy text: ', err);
-                });
-        });
-    }
-    
-    function applyFiltersAndRender() {
-        // Start with all prompts
-        let filteredPrompts = [...samplePrompts];
-        
-        // Apply search filter if search term exists
-        if (searchTerm) {
-            filteredPrompts = filteredPrompts.filter(prompt => 
-                prompt.title.toLowerCase().includes(searchTerm) || 
-                prompt.description.toLowerCase().includes(searchTerm) || 
-                prompt.content.toLowerCase().includes(searchTerm)
-            );
-        }
-        
-        // Apply tag filter if not "All"
-        if (activeFilter !== 'All') {
-            filteredPrompts = filteredPrompts.filter(prompt => 
-                prompt.tags.includes(activeFilter)
-            );
-        }
-        
-        // Apply view filter if "Favorites"
-        if (activeView === 'Favorites') {
-            filteredPrompts = filteredPrompts.filter(prompt => prompt.favorite);
-        }
-        
-        // Apply sorting
-        filteredPrompts = sortPrompts(filteredPrompts, currentSort);
-        
-        // Update current prompts and render
-        currentPrompts = filteredPrompts;
-        renderPrompts();
-    }
-    
-    function sortPrompts(prompts, sortType) {
-        switch (sortType) {
-            case 'newest':
-                return [...prompts].sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated));
-            case 'oldest':
-                return [...prompts].sort((a, b) => new Date(a.dateCreated) - new Date(b.dateCreated));
-            case 'a-z':
-                return [...prompts].sort((a, b) => a.title.localeCompare(b.title));
-            case 'most-used':
-                return [...prompts].sort((a, b) => b.useCount - a.useCount);
-            default:
-                return prompts;
-        }
-    }
-    
-    function renderPrompts() {
-        // Clear the grid
-        promptGrid.innerHTML = '';
-        
-        // If no prompts match the filters
-        if (currentPrompts.length === 0) {
-            promptGrid.innerHTML = `
-                <div class="no-prompts">
-                    <p>No prompts found matching your criteria.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Render each prompt
-        currentPrompts.forEach(prompt => {
-            const promptCard = createPromptCard(prompt);
-            promptGrid.appendChild(promptCard);
-        });
-        
-        // Add event listeners to the newly created cards
-        setupCardEventListeners();
-    }
-    
-    function createPromptCard(prompt) {
-        const card = document.createElement('div');
-        card.className = 'prompt-card';
-        card.dataset.id = prompt.id;
-        
-        card.innerHTML = `
-            <div class="card-header">
-                <h3 class="card-title">${prompt.title}</h3>
-                <div class="card-tags">
-                    ${prompt.tags.map(tag => `<span class="card-tag">${tag}</span>`).join('')}
-                </div>
-                <button class="favorite-button ${prompt.favorite ? 'active' : ''}" 
-                    style="color: ${prompt.favorite ? '#FFD700' : 'rgba(255,255,255,0.7)'}">★</button>
-            </div>
-            <div class="card-content">
-                <p class="card-description">${prompt.description}</p>
-                <div class="card-preview">${prompt.content}</div>
-            </div>
-        `;
-        
-        return card;
-    }
-    
-    function setupCardEventListeners() {
-        // Get all prompt cards again after rendering
-        const promptCards = document.querySelectorAll('.prompt-card');
-        
-        // Open modal when clicking on a prompt card (except when clicking favorite button)
-        promptCards.forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('favorite-button')) {
-                    const promptId = card.dataset.id;
-                    const promptData = currentPrompts.find(p => p.id === promptId);
-                    if (promptData) {
-                        showPromptDetail(promptData);
-                    }
-                }
-            });
-        });
-        
-        // Handle favorite button clicks
-        const favoriteButtons = document.querySelectorAll('.favorite-button');
-        favoriteButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent opening the modal
-                
-                // Find the prompt data
-                const card = button.closest('.prompt-card');
-                const promptId = card.dataset.id;
-                const promptIndex = samplePrompts.findIndex(p => p.id === promptId);
-                
-                if (promptIndex !== -1) {
-                    // Toggle favorite status
-                    samplePrompts[promptIndex].favorite = !samplePrompts[promptIndex].favorite;
-                    
-                    // Update UI
-                    button.classList.toggle('active');
-                    if (button.classList.contains('active')) {
-                        button.style.color = '#FFD700';
-                    } else {
-                        button.style.color = 'rgba(255,255,255,0.7)';
-                    }
-                    
-                    // If in favorites view, may need to re-render
-                    if (activeView === 'Favorites') {
-                        applyFiltersAndRender();
-                    }
-                }
-            });
-        });
-    }
-    
-    function showPromptDetail(prompt) {
-        // Update the modal content with the prompt data
-        document.querySelector('.prompt-detail-title').textContent = prompt.title;
-        
-        // Clear and repopulate tags
-        const tagsContainer = document.querySelector('.prompt-detail-tags');
-        tagsContainer.innerHTML = '';
-        prompt.tags.forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.className = 'prompt-detail-tag';
-            tagElement.textContent = tag;
-            tagsContainer.appendChild(tagElement);
-        });
-        
-        // Format date strings
-        const createdDate = new Date(prompt.dateCreated);
-        const formattedDate = createdDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-        
-        // Update meta information
-        document.querySelector('.prompt-detail-meta').innerHTML = `
-            <span>Added: ${formattedDate}</span>
-            <span>Used: ${prompt.useCount} times</span>
-        `;
-        
-        // Update description and content
-        document.querySelector('.prompt-detail-description').innerHTML = `
-            <p>${prompt.description}</p>
-        `;
-        document.querySelector('.prompt-detail-content').textContent = prompt.content;
-        
-        // Update favorite button
-        const favoriteDetailButton = document.querySelector('.favorite-detail');
-        favoriteDetailButton.textContent = prompt.favorite ? '★ Favorite' : '☆ Add to Favorites';
-        
-        // Set up favorite button event in modal
-        favoriteDetailButton.onclick = () => {
-            // Find the prompt data
-            const promptIndex = samplePrompts.findIndex(p => p.id === prompt.id);
-            
-            if (promptIndex !== -1) {
-                // Toggle favorite status
-                samplePrompts[promptIndex].favorite = !samplePrompts[promptIndex].favorite;
-                prompt.favorite = samplePrompts[promptIndex].favorite;
-                
-                // Update UI
-                favoriteDetailButton.textContent = prompt.favorite ? '★ Favorite' : '☆ Add to Favorites';
-                
-                // If in favorites view, may need to re-render
-                if (activeView === 'Favorites') {
-                    applyFiltersAndRender();
-                } else {
-                    // Just update the card in the grid
-                    const card = document.querySelector(`.prompt-card[data-id="${prompt.id}"]`);
-                    if (card) {
-                        const button = card.querySelector('.favorite-button');
-                        button.classList.toggle('active');
-                        button.style.color = prompt.favorite ? '#FFD700' : 'rgba(255,255,255,0.7)';
-                    }
-                }
-            }
-        };
-        
-        // Show the modal
-        modal.style.display = 'block';
-        
-        // Increment the use count
-        const promptIndex = samplePrompts.findIndex(p => p.id === prompt.id);
-        if (promptIndex !== -1) {
-            samplePrompts[promptIndex].useCount++;
-        }
-    }
-});
+];
+
+// Get all unique tags from the prompts
+function getAllTags() {
+    const tagSet = new Set();
+    samplePrompts.forEach(prompt => {
+        prompt.tags.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+}
